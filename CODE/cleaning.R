@@ -15,7 +15,15 @@ clean_311_service_requests <- function(raw) {
 }
 
 clean_food_venues <- function(raw) {
-  raw
+  raw %>% mutate(key = as.character(business_name),
+                 street_address = as.character(street_address),
+                 city = as.character(city),
+                 state = as.character(state),
+                 country = as.character(country),
+                 latitude = as.numeric(latitude),
+                 longitude = as.numeric(longitude),
+                 categories = as.character(categories),
+                 type = as.character(type))
 }
 
 clean_food_inspections <- function(raw) {
