@@ -68,7 +68,14 @@ clean_health_indicators <- function(raw) {
 }
 
 clean_county_demographics <- function(raw) {
-  raw
+  raw %>% 
+    transmute(key = as.character(nta_code),
+              nta_name = as.character(nta_name),
+              population = as.numeric(population),
+              people_per_acre = as.numeric(people_per_acre),
+              households = as.numeric(households),
+              median_income = as.numeric(population),
+              mean_income = as.numeric(population))
 }
 
 clean_geo <- function(raw) {
