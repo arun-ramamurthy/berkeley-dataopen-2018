@@ -1,8 +1,51 @@
 ---
 title: "[UC Berkeley Data Open]"
-output: pdf_document
+author: "Arun Ramamurthy, Biyonka Liang, Mujahid Zaman, Kazu Kogachi"
+date: "September 8, 2018"
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr)
+# SETUP FOR VISUALIZATIONS, librarys, data, etc...
+
+temp <- 'hidden variable'
 ```
+
+### 1. Non-Technical Executive Summary
+##### Question/Hypothesis
+
+##### Key Findings and their Significance
+
+##### Conclusions
+
+Reference possible variables: `r {temp}`, inline-code snippets: `func()`
+
+```{r, echo=FALSE}
+# Visualizations can go here
+```
+
+### 2. Technical Exposition
+##### Data cleaning + Wangling
+- example
+- bullets
+
+```{r, echo=FALSE}
+# More pretty pictures go here
+```
+
+##### Investigative Depth 
+
+```{r, echo=FALSE}
+# More pretty pictures go here
+```
+
+##### Analytical & Modeling Rigor
+
+```{r, echo=FALSE}
+# More pretty pictures go here
+```
+
+
