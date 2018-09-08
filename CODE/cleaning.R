@@ -8,6 +8,7 @@ library(pryr)
 ## For common R-specific tasks
 source(glue("{here()}/CODE/convenience.R"))
 source(glue("{here()}/CODE/text.R"))
+library(sf)
 
 ##################
 #### CLEANING ####
@@ -47,18 +48,26 @@ clean_food_venues <- function(raw) {
 }
 
 clean_nta_demographics <- function(raw) {
-  raw %>% 
+  raw %>%
     transmute(key = as.character(nta_code),
               nta_name = as.character(nta_name),
-              population = as.numeric(population),
+              population = as.integer(population),
               people_per_acre = as.numeric(people_per_acre),
-              households = as.numeric(households),
+              households = as.integer(households),
               median_income = as.numeric(population),
               mean_income = as.numeric(population))
 }
 
 clean_geo <- function(raw) {
-  raw
+  get_odd <- function(vec) {vec[(1:length(vec)) %% 2 == 1]}
+  get_even <- function(vec) {vec[(1:length(vec)) %% 2 == 0]}
+  shapefile <-
+    data_frame(polygon =
+                 raw %>% names(),
+               points =
+                 raw %>% as.list() %>%
+                 map(na.omit) %>%
+                 {map2_chr(get_odd(.), get_even(.), ~ glue("({.x},{.y})"))})
 }
 
 clean_health_indicators <- function(raw) {
@@ -132,7 +141,7 @@ make_design_matrix.raw <- function(dir = "DATA/Datathon Materials") {
   service_requests <- read_csv(dir + "311_service_requests.csv.gz") %>% clean_311_service_requests()
   food_venues <- read_csv(dir + "food_venues.csv.gz") %>% clean_food_venues()
   health_indicators <- read_csv(dir + "community_health.csv") %>% clean_health_indicators()
-  county_demographics <- read_csv(dir + "demographics.csv") %>% clean_county_demographics()
+  demographics <- read_csv(dir + "demographics_city.csv") %>% clean_nta_demographics()
   design_matrix <-
     list(food_venues, food_inspections) %>% reduce(left_join, by = c("latitude", "longitude"))
 }
