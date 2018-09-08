@@ -25,8 +25,9 @@ clean_food_venues <- function(raw) {
                  categories = as.character(categories),
                  type = as.character(type))
 }
+library(feather)
 cleaned_food_venues = clean_food_venues(food_venues)
-
+write_feather(cleaned_food_venues, "cleaned_food_venues")
 clean_food_inspections <- function(raw) {
   raw
 }
