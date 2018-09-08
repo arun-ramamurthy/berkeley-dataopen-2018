@@ -1,5 +1,6 @@
 ---
-title: "[UC Berkeley Data Open]"
+title: "Health Indicators in the Boroughs of New York"
+subtitle: "The Data Open at UC Berkeley"
 author: "Arun Ramamurthy, Biyonka Liang, Mujahid Zaman, Kazu Kogachi"
 date: "September 8, 2018"
 output: html_document
@@ -9,7 +10,28 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 
 library(dplyr)
+library(tidyr)
+library(ggplot2)
+
 # SETUP FOR VISUALIZATIONS, librarys, data, etc...
+
+# Makesure to gunzip food_venues, as it was given as .gz
+# Note: this is not currently used
+food = read.csv("../DATA/food_venues.csv", sep = ',')
+
+# TODO: upload this csv
+# Note: this is not currently used
+health = read.csv("../DATA/health_indicators-2.csv", sep = ',')
+
+# TODO: upload this csv
+# Note: this is not currently used
+demo_county_bracket = read.csv("../DATA/demo_county_brackets.csv", sep = ',')
+
+# TODO: upload this csv
+democounty = read.csv("../DATA/demo_county.csv", sep = ',')
+democounty = democounty[democounty$borough != "New York (state)",]
+
+dc= democounty[democounty$year == 2016,]
 
 temp <- 'hidden variable'
 ```
@@ -25,6 +47,27 @@ Reference possible variables: `r {temp}`, inline-code snippets: `func()`
 
 ```{r, echo=FALSE}
 # Visualizations can go here
+
+# Change in county median income
+ggplot() + geom_scatter(democounty)
+
+# Difference in food stamp need
+ggplot(dc, aes(borough, food_stamp_benefits/total_households, fill = borough)) +
+  geom_bar(stat = "identity") + 
+  labs(x="", y= "Food Stamp Benefits/Total Household", fill = "Borough") + 
+  ggtitle("Food Stamp Benefits per Household")
+
+# Income vs Private Healthcare
+ggplot(dc, aes(x = median_household_income, y = prop_w_private_health, color = borough)) +
+  geom_point(stat = "identity")+
+  labs(x= "Median Household Income", y="Proportion with Private Healthcare", color = "Borough")+
+  ggtitle("Income vs. Proportion with Healthcare by Borough")
+
+# Income vs Public Healthcare
+ggplot(dc, aes(x = median_household_income, y = prop_w_public_health, color = borough)) +
+  geom_point(stat = "identity")+
+  labs(x= "Median Household Income", y="Proportion with Public Healthcare", color = "Borough")+
+  ggtitle("Income vs. Proportion with Healthcare by Borough")
 ```
 
 ### 2. Technical Exposition
@@ -47,5 +90,3 @@ Reference possible variables: `r {temp}`, inline-code snippets: `func()`
 ```{r, echo=FALSE}
 # More pretty pictures go here
 ```
-
-
