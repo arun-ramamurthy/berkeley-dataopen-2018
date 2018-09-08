@@ -32,7 +32,9 @@ clean_311_service_requests <- function(raw) {
               ## board = as.character(community_board),
               borough = as.factor(borough),
               lat = as.numeric(latitude),
-              lon = as.numeric(longitude))
+              lon = as.numeric(longitude)) %>%
+    filter(location_type %in% c("Restaurant/Bar/Deli/Bakery", "Club/Bar/Restaurant", "Food Cart Vendor"),
+           complaint_type %in% c("Food Establishment", "Food Poisoning", "Smoking"))
 }
 
 clean_food_venues <- function(raw) {
@@ -41,15 +43,15 @@ clean_food_venues <- function(raw) {
                  city = as.character(city),
                  state = as.character(state),
                  country = as.character(country),
-                 latitude = as.numeric(latitude),
-                 longitude = as.numeric(longitude),
+                 lat = as.numeric(latitude),
+                 lon = as.numeric(longitude),
                  categories = as.character(categories),
                  type = as.character(type))
 }
 
 clean_nta_demographics <- function(raw) {
   raw %>%
-    transmute(key = as.character(nta_code),
+    transmute(ntacode = as.character(nta_code),
               nta_name = as.character(nta_name),
               population = as.integer(population),
               people_per_acre = as.numeric(people_per_acre),
@@ -58,16 +60,12 @@ clean_nta_demographics <- function(raw) {
               mean_income = as.numeric(population))
 }
 
-clean_geo <- function(raw) {
-  get_odd <- function(vec) {vec[(1:length(vec)) %% 2 == 1]}
-  get_even <- function(vec) {vec[(1:length(vec)) %% 2 == 0]}
-  shapefile <-
-    data_frame(polygon =
-                 raw %>% names(),
-               points =
-                 raw %>% as.list() %>%
-                 map(na.omit) %>%
-                 {map2_chr(get_odd(.), get_even(.), ~ glue("({.x},{.y})"))})
+generate_geo <- function(dir = "DATA/NTA map/") {
+  read_sf(dir) %>%
+    transmute(ntacode = as.factor(ntacode),
+              borough = as.factor(boroname),
+              ntaname,
+              geometry)
 }
 
 clean_health_indicators <- function(raw) {
@@ -85,6 +83,19 @@ clean_health_indicators <- function(raw) {
               end_year = as.numeric(year_tuple[,3]),
               lat = as.numeric(lat_lon[,2]),
               lon = as.numeric(lat_lon[,3]))
+}
+
+NTAize <- function(data, geo) {
+  library(furrr)
+  get_nta <- function(lat, lon) {
+    geo %>%
+      mutate(inside = st_contains(geometry, st_point(c(lon, lat)), sparse = F)) %>%
+      filter(inside) %>%
+      pull(ntacode) %>%
+      {ifelse(is.null(.), NA_integer_, .)}
+  }
+  data %>%
+    mutate(ntacode = future_map2_int(lat, lon, get_nta))
 }
 
 clean_county_demographics <- function(raw) {
@@ -136,13 +147,28 @@ clean_county_demographics_brackets <- function(raw) {
 
 #################
 #### JOINING ####
-make_design_matrix.raw <- function(dir = "DATA/Datathon Materials") {
+make_design_matrix <- function(dir = "DATA/Datathon Materials") {
   dir <- glue("{here()}/{dir}/")
   service_requests <- read_csv(dir + "311_service_requests.csv.gz") %>% clean_311_service_requests()
   food_venues <- read_csv(dir + "food_venues.csv.gz") %>% clean_food_venues()
   health_indicators <- read_csv(dir + "community_health.csv") %>% clean_health_indicators()
   demographics <- read_csv(dir + "demographics_city.csv") %>% clean_nta_demographics()
+  geo <- generate_geo()
   design_matrix <-
-    list(food_venues, food_inspections) %>% reduce(left_join, by = c("latitude", "longitude"))
+    generate_response() %>%
+    left_join(geo, by = "ntacode") %>%
+    left_join(service_requests %>% NTAize(geo), by = "ntacode") %>%
+    left_join(demographics %>% NTAize(geo), by = "ntacode") %>%
+    left_join(food_venues %>% filter(state == "NY") %>% NTAize(geo), by = "ntacode") %>%
+    group_by(overall_dietary_health, ntacode, borough) %>%
+    summarise(restaurant_incidents = sum(complaint_type == "Food Establishment"),
+              poisoning_incidents = sum(complaint_type == "Food Poisoning"),
+              smoking_violations = sum(complaint_type == "Smoking"),
+              people_per_acre = first(people_per_acre),
+              household_occupancy = first(population) / first(households),
+              median_income = first(median_income),
+              prop_fast_food = mean(categories %>% str_detect("Fast")),
+              prop_grocery_stores = mean(type == "grocery store"))
+  return(design_matrix)
 }
 #################
