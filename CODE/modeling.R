@@ -56,9 +56,9 @@ plot_univariate <- function(design_matrix, column = spread) {
 }
 
 plot_univariate_matrix <- function(design_matrix,
-                                   columns) {
+                                   ...) {
   title <-glue("Univariate Displays")
-  columns %>%
+  list(...) %>%
     map(~ plot_univariate(design_matrix, .)) %>%
     ggmatrix(nrow = length(columns), ncol = 1, yAxisLabels = columns, title)
 }
